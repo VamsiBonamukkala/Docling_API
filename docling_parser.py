@@ -7,6 +7,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
 import base64
 from io import BytesIO
 import json
@@ -83,5 +84,25 @@ def pdf_extract_docling(pdf_path, text_splitter):
         table_df = table.export_to_dataframe()
         table_metadata = {'filename': pdf_path, 'page_number': table.prov[0].page_no}
         tables_list.append((table_df,table_metadata))
+
+    for element, level in doc.iterate_items():
+        if isinstance(element, PictureItem):
+            image = element.get_image(doc)
+            # Convert the PIL image to bytes using BytesIO
+            buffered = BytesIO()
+            image.save(buffered, format="PNG")  # You can adjust the format if needed
+            # Get the byte data and encode it to base64
+            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            img_html = f'<img src="data:image/png;base64,{img_str}" alt="base64 image"/>'
+            # Extract children text for the image
+            child_texts = []
+            refs = [child.cref for child in element.children]
+            for t in doc.texts:
+                if t.self_ref in refs:
+                    child_texts.append(t.text)
+            image_text = ""
+            image_text_embedding = None
+            image_data = {'image_base64':img_str, 'image_html': img_html,'child_texts':child_texts, 'filename': pdf_path, 'page_number': element.prov[0].page_no, 'is_graph':False, 'image_text':image_text, 'image_text_embedding':json.dumps(image_text_embedding)}
+            images_list.append(image_data)
     print(f"Conversion secs: {doc_conversion_secs}")
     return text_list,tables_list,images_list
