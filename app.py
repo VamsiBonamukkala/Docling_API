@@ -43,10 +43,15 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     try:
         text_list, tables_list, images_list = pdf_extract_docling(str(file_path), text_splitter)
+        # Serialize tables (pandas DataFrame) into JSON
+        serialized_tables = [
+            {"data": df.to_dict(orient="records"), "metadata": meta}
+            for df, meta in tables_list
+        ]
 
         return JSONResponse(content={
             "text": text_list,
-            "tables": tables_list,
+            "tables": serialized_tables,
             "images": images_list
         })
 
