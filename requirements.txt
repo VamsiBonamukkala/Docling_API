@@ -1,0 +1,5 @@
+docling==2.15.1
+fastapi==0.115.7
+langchain_text_splitters==0.3.5
+python-multipart==0.0.20
+uvicorn==0.34.0
